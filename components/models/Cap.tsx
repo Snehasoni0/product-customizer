@@ -14,7 +14,7 @@ export default function Cap({
   const { nodes } = useGLTF("/baseball_cap.glb") as any;
 
   const mesh = useMemo(() => {
-    return Object.values(nodes).find((n: any) => n.isMesh);
+    return Object.values(nodes).find((n: any) => n.isMesh) as any;
   }, [nodes]);
 
   useEffect(() => {
