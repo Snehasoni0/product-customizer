@@ -1,18 +1,27 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useGLTF, Center, Decal } from "@react-three/drei";
 import * as THREE from "three";
+import { useThree } from "@react-three/fiber";
 
 export default function ShoppingBag({
   color,
   decalConfig = {},
+  selectedItem,
+  setSelectedItem,
+  handleUpdateDecal,
 }: {
   color: string;
   decalConfig: any;
+  selectedItem: string | null;
+  setSelectedItem: (item: string | null) => void;
+  handleUpdateDecal: (updates: any) => void;
 }) {
   const { scene } = useGLTF("/shopping.glb") as any;
   const clonedScene = useMemo(() => scene.clone(), [scene]);
+  const { controls } = useThree() as any;
+  const [isDragging, setIsDragging] = useState(false);
 
   // 1. Mesh Separation & 'getX' Crash Fix
   const { bagMeshes, handleMeshes } = useMemo(() => {
@@ -21,20 +30,17 @@ export default function ShoppingBag({
 
     clonedScene.traverse((n: any) => {
       if (n.isMesh) {
-        // Fix missing normals to prevent Decal crash
         if (n.geometry && !n.geometry.attributes.normal) {
           n.geometry.computeVertexNormals();
         }
 
         const name = n.name.toLowerCase();
         
-        // Hide environment/shadows
         if (name.includes("shadow") || name.includes("plane") || name.includes("ground") || name.includes("floor")) {
           n.visible = false;
           return;
         }
 
-        // Separate handles from main body
         if (name.includes("handle") || name.includes("strap") || name.includes("rope") || name.includes("ring")) {
           handles.push(n);
         } else {
@@ -107,29 +113,65 @@ export default function ShoppingBag({
     return new THREE.TextureLoader().load(decalConfig.image);
   }, [decalConfig.image]);
 
-  // Projector Settings (Balanced to hit front wall ONLY)
-  const decalZ = 0.5; // Projector is slightly in front of the bag
-  const projectionDepth = 1.0; // Beam length is short enough to not hit the back wall
+  const decalZ = 0.5; 
+  const projectionDepth = 1.0; 
+
+  const handlePointerDown = (e: any) => {
+    const hit = e.intersections.find((i: any) => i.object.userData?.isDecal);
+    if (hit) {
+      e.stopPropagation();
+      setSelectedItem(hit.object.userData.type);
+      setIsDragging(true);
+      if (controls) controls.enabled = false;
+    } else {
+      // Allow rotation by not stopping propagation
+    }
+  };
+
+  const handlePointerMove = (e: any) => {
+    if (!isDragging || !selectedItem) return;
+    e.stopPropagation();
+
+    // The Shopping Bag is centered and scaled. 
+    // We can use the intersection point in local space.
+    const localPoint = e.object.worldToLocal(e.point.clone());
+    
+    if (selectedItem === "text") {
+      handleUpdateDecal({ textPosX: localPoint.x, textPosY: localPoint.y });
+    } else {
+      handleUpdateDecal({ imgPosX: localPoint.x, imgPosY: localPoint.y });
+    }
+  };
+
+  useEffect(() => {
+    const handlePointerUp = () => {
+      setIsDragging(false);
+      if (controls) controls.enabled = true;
+    };
+    window.addEventListener("pointerup", handlePointerUp);
+    return () => window.removeEventListener("pointerup", handlePointerUp);
+  }, [controls]);
 
   return (
-    <group scale={2.0}> 
+    <group 
+      scale={2.0}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+    > 
       <Center>
-        {/* Render Handles */}
         {handleMeshes.map((m: any, idx: number) => (
           <mesh key={`handle-${idx}`} geometry={m.geometry} material={m.material} />
         ))}
 
-        {/* Render Bag Body with Decals */}
         {bagMeshes.map((m: any, idx: number) => (
           <mesh key={`bag-${idx}`} geometry={m.geometry} material={m.material}>
-            
-            {/* Text Decal */}
             {textTexture && (
               <Decal
                 position={[decalConfig.textPosX || 0, decalConfig.textPosY || 0, decalZ]}
                 rotation={[0, 0, decalConfig.textRot || 0]}
                 scale={[decalConfig.textSize || 1, decalConfig.textSize || 1, projectionDepth]}
                 map={textTexture}
+                userData={{ isDecal: true, type: "text" }}
               >
                 <meshStandardMaterial
                   map={textTexture}
@@ -142,13 +184,13 @@ export default function ShoppingBag({
               </Decal>
             )}
 
-            {/* Image Decal */}
             {imageTexture && (
               <Decal
                 position={[decalConfig.imgPosX || 0, decalConfig.imgPosY || 0, decalZ]}
                 rotation={[0, 0, decalConfig.imgRot || 0]}
                 scale={[decalConfig.imageSize || 1, decalConfig.imageSize || 1, projectionDepth]}
                 map={imageTexture}
+                userData={{ isDecal: true, type: "image" }}
               >
                 <meshStandardMaterial
                   map={imageTexture}
@@ -160,7 +202,6 @@ export default function ShoppingBag({
                 />
               </Decal>
             )}
-            
           </mesh>
         ))}
       </Center>

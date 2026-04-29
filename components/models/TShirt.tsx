@@ -3,26 +3,35 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import { useThree } from "@react-three/fiber";
 
 export default function TShirt({
   color,
   decalConfig = {},
+  selectedItem,
+  setSelectedItem,
+  handleUpdateDecal,
 }: {
   color: string;
   decalConfig: any;
+  selectedItem: string | null;
+  setSelectedItem: (item: string | null) => void;
+  handleUpdateDecal: (updates: any) => void;
 }) {
   const { scene } = useGLTF("/plain_dark_blue_t-shirt.glb") as any;
   const clonedScene = useMemo(() => scene.clone(), [scene]);
+  const { controls } = useThree() as any;
   
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasTexture, setCanvasTexture] = useState<THREE.CanvasTexture | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // 1. Initialize Canvas Texture
   useEffect(() => {
     if (typeof document !== "undefined" && !canvasRef.current) {
       const canvas = document.createElement("canvas");
       canvas.width = 2048;
-      canvas.height = 2048; // T-shirts often need square high-res UVs
+      canvas.height = 2048; 
       canvasRef.current = canvas;
       
       const texture = new THREE.CanvasTexture(canvas);
@@ -51,7 +60,6 @@ export default function TShirt({
         const height = size.y;
         let score = volume * height; 
 
-        // T-shirt body is usually named "T_Shirt" or similar
         if (meshName.includes("shirt") || meshName.includes("body") || meshName.includes("fabric")) {
           score *= 10;
         }
@@ -93,7 +101,6 @@ export default function TShirt({
           const iSize = Number(decalConfig.imageSize) || 1;
           const iRot = Number(decalConfig.imgRot) || 0;
 
-          // Standard mapping for center of T-shirt UVs (usually around the middle)
           const x = 1024 + (iPosX * 512); 
           const y = 1024 - (iPosY * 512);
           const w = 400 * iSize * 2;
@@ -160,13 +167,76 @@ export default function TShirt({
     });
   }, [clonedScene, color, bodyMesh, canvasTexture]);
 
+  const handlePointerDown = (e: any) => {
+    if (!e.uv) return;
+    
+    // Map click UV to our internal pos system
+    const clickPosX = (e.uv.x - 0.5) * 4;
+    const clickPosY = (e.uv.y - 0.5) * 4;
+
+    // Check distance to text
+    const distText = Math.sqrt(Math.pow(clickPosX - decalConfig.textPosX, 2) + Math.pow(clickPosY - decalConfig.textPosY, 2));
+    const textThreshold = (decalConfig.textSize || 1) * 0.4;
+
+    // Check distance to logo
+    const distImg = Math.sqrt(Math.pow(clickPosX - decalConfig.imgPosX, 2) + Math.pow(clickPosY - decalConfig.imgPosY, 2));
+    const imgThreshold = (decalConfig.imageSize || 1) * 0.4;
+
+    if (distText < textThreshold) {
+      e.stopPropagation();
+      setSelectedItem("text");
+      setIsDragging(true);
+      if (controls) controls.enabled = false;
+    } else if (distImg < imgThreshold) {
+      e.stopPropagation();
+      setSelectedItem("image");
+      setIsDragging(true);
+      if (controls) controls.enabled = false;
+    } else {
+      // Rotation handled by bubbling
+    }
+  };
+
+  const handlePointerMove = (e: any) => {
+    if (!isDragging || !selectedItem || !e.uv) return;
+    e.stopPropagation();
+
+    // Map UV (0 to 1) to decal positions
+    const u = e.uv.x;
+    const v = e.uv.y;
+
+    const newPosX = (u - 0.5) * 4;
+    const newPosY = (v - 0.5) * 4;
+
+    if (selectedItem === "text") {
+      handleUpdateDecal({ textPosX: newPosX, textPosY: newPosY });
+    } else {
+      handleUpdateDecal({ imgPosX: newPosX, imgPosY: newPosY });
+    }
+  };
+
+  useEffect(() => {
+    const handlePointerUp = () => {
+      setIsDragging(false);
+      if (controls) controls.enabled = true;
+    };
+    window.addEventListener("pointerup", handlePointerUp);
+    return () => window.removeEventListener("pointerup", handlePointerUp);
+  }, [controls]);
+
   if (!canvasTexture) return null;
 
   return (
-    <group scale={1.2}> 
+    <group 
+      scale={1.2}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+    > 
       <primitive object={clonedScene} />
     </group>
   );
 }
+
+
 
 useGLTF.preload("/plain_dark_blue_t-shirt.glb");

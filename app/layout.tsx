@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,13 +14,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <script 
+      <body className="min-h-screen antialiased">
+        <Script 
           type="module" 
           src="/model-viewer.min.js"
-        ></script>
-      </head>
-      <body className="min-h-screen antialiased">
+          strategy="lazyOnload"
+        />
         {children}
       </body>
     </html>

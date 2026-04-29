@@ -1,74 +1,64 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import { useThree } from "@react-three/fiber";
 
 export default function Tumbler({
   color,
-  decalConfig = {},
+  decalConfig,
+  selectedItem,
+  setSelectedItem,
+  handleUpdateDecal,
 }: {
   color: string;
   decalConfig: any;
+  selectedItem: string | null;
+  setSelectedItem: (item: string | null) => void;
+  handleUpdateDecal: (updates: any) => void;
 }) {
   const { scene } = useGLTF("/hydro_flask_tumbler.glb") as any;
   const clonedScene = useMemo(() => scene.clone(), [scene]);
+  const { controls } = useThree() as any;
+  const [isDragging, setIsDragging] = useState(false);
   
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasTexture, setCanvasTexture] = useState<THREE.CanvasTexture | null>(null);
 
-  // 1. Initialize Canvas Texture (Higher Resolution for full width)
+  const p = (val: any, def = 0) => (val !== undefined ? val : def);
+
   useEffect(() => {
     if (typeof document !== "undefined" && !canvasRef.current) {
       const canvas = document.createElement("canvas");
-      // Use 2048 for more horizontal space and sharper text
       canvas.width = 2048;
       canvas.height = 1024;
       canvasRef.current = canvas;
-      
       const texture = new THREE.CanvasTexture(canvas);
       texture.flipY = true; 
-      // Wrap horizontally to prevent cutting off at the edges
-      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapS = THREE.ClampToEdgeWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
       texture.anisotropy = 16;
-      texture.colorSpace = THREE.SRGBColorSpace; 
-      
+      texture.colorSpace = THREE.SRGBColorSpace;
       setCanvasTexture(texture);
     }
   }, []);
 
-  // 2. Identify the Body Mesh
   const bodyMesh = useMemo(() => {
     let mainBody: any = null;
-    let maxScore = 0;
-
+    let maxArea = 0;
     clonedScene.traverse((n: any) => {
       if (n.isMesh) {
-        const meshName = n.name.toLowerCase();
         n.geometry.computeBoundingBox();
-        const box = n.geometry.boundingBox!;
         const size = new THREE.Vector3();
-        box.getSize(size);
-        
-        const volume = size.x * size.y * size.z;
-        const height = size.y;
-        let score = volume * height; 
-
-        if (meshName.includes("lid") || meshName.includes("cap") || meshName.includes("rim") || meshName.includes("top") || meshName.includes("straw")) {
-          score *= 0.01; 
-        }
-
-        if (score > maxScore) {
-          maxScore = score;
-          mainBody = n;
-        }
+        n.geometry.boundingBox!.getSize(size);
+        const area = size.x * size.y;
+        if (area > maxArea) { maxArea = area; mainBody = n; }
       }
     });
-
     return mainBody;
   }, [clonedScene]);
 
-  // 3. Draw Logic
   useEffect(() => {
     if (!canvasTexture || !canvasRef.current) return;
     const canvas = canvasRef.current;
@@ -76,105 +66,124 @@ export default function Tumbler({
     if (!ctx) return;
 
     const renderCanvas = async () => {
-      // Fill background
-      ctx.fillStyle = color || "#2196f3";
+      ctx.fillStyle = color || "#ffffff";
       ctx.fillRect(0, 0, 2048, 1024);
 
-      // Image
       if (decalConfig.image) {
         try {
-          const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = await new Promise<HTMLImageElement>((res) => {
             const i = new Image();
-            i.crossOrigin = "anonymous"; 
-            i.onload = () => resolve(i);
-            i.onerror = (err) => reject(err);
+            i.crossOrigin = "anonymous";
+            i.onload = () => res(i);
             i.src = decalConfig.image;
           });
-
-          const iPosX = Number(decalConfig.imgPosX) || 0;
-          const iPosY = Number(decalConfig.imgPosY) || 0;
-          const iSize = Number(decalConfig.imageSize) || 1;
-          const iRot = Number(decalConfig.imgRot) || 0;
-
-          // Map to 2048 width: center is 1024
-          const x = 1024 + (iPosX * 682); 
-          const y = 512 - (iPosY * 341);
-          const w = 400 * iSize;
+          const aspect = img.width / img.height;
+          const size = p(decalConfig.imageSize, 0.2) * 800;
+          const x = p(decalConfig.imgPosX, 0.5) * 2048;
+          const y = (1 - p(decalConfig.imgPosY, 0.5)) * 1024;
 
           ctx.save();
           ctx.translate(x, y);
-          ctx.rotate(iRot);
-          ctx.drawImage(img, -w / 2, -w / 2, w, w);
+          ctx.rotate((decalConfig.imgRot || 0) * (Math.PI / 180));
+          ctx.drawImage(img, -(size * aspect) / 2, -size / 2, size * aspect, size);
+          if (selectedItem === "image") {
+            ctx.strokeStyle = "white"; ctx.setLineDash([20, 20]); ctx.lineWidth = 10;
+            ctx.strokeRect(-(size * aspect) / 2 - 20, -size / 2 - 20, size * aspect + 40, size + 40);
+          }
           ctx.restore();
-        } catch (error) {
-          console.error("Image load error:", error);
-        }
+        } catch (e) {}
       }
 
-      // Text
       if (decalConfig.text) {
-        const tPosX = Number(decalConfig.textPosX) || 0;
-        const tPosY = Number(decalConfig.textPosY) || 0;
-        const tSize = Number(decalConfig.textSize) || 1;
-        const tRot = Number(decalConfig.textRot) || 0;
-
-        const x = 1024 + (tPosX * 682);
-        const y = 512 - (tPosY * 341);
-        const fontSize = 150 * tSize; // Slightly larger base font for 2048 width
+        const fontSize = p(decalConfig.textSize, 0.2) * 400;
+        ctx.font = `bold ${fontSize}px ${decalConfig.fontFamily || "Arial"}`;
+        const metrics = ctx.measureText(decalConfig.text);
+        const x = p(decalConfig.textPosX, 0.5) * 2048;
+        const y = (1 - p(decalConfig.textPosY, 0.5)) * 1024;
 
         ctx.save();
         ctx.translate(x, y);
-        ctx.rotate(tRot);
-        ctx.fillStyle = decalConfig.textColor || "#ffffff"; 
-        ctx.font = `bold ${fontSize}px ${decalConfig.fontFamily || "Arial"}`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
+        ctx.rotate((decalConfig.textRot || 0) * (Math.PI / 180));
+        ctx.fillStyle = decalConfig.textColor || "#ffffff";
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText(decalConfig.text, 0, 0);
+        if (selectedItem === "text") {
+          ctx.strokeStyle = "white"; ctx.setLineDash([20, 20]); ctx.lineWidth = 10;
+          ctx.strokeRect(-(metrics.width + 60) / 2, -(fontSize + 60) / 2, metrics.width + 60, fontSize + 60);
+        }
         ctx.restore();
       }
-
       canvasTexture.needsUpdate = true;
     };
-
     renderCanvas();
-  }, [decalConfig, color, canvasTexture]);
+  }, [decalConfig, color, canvasTexture, selectedItem]);
 
-  // 4. Apply to Model
   useEffect(() => {
-    if (!canvasTexture || !bodyMesh) return;
-
+    if (!bodyMesh || !canvasTexture) return;
     clonedScene.traverse((n: any) => {
       if (n.isMesh) {
-        if (!n.userData.isCustomized) {
-          n.material = n.material.clone();
-          n.userData.isCustomized = true;
+        const newMat = new THREE.MeshStandardMaterial({
+          roughness: 0.3,
+          metalness: 0.1,
+        });
+        if (n === bodyMesh) { 
+          newMat.map = canvasTexture; 
+          newMat.color.set("#ffffff"); 
+        } else { 
+          newMat.color.set("#222222"); 
+          newMat.map = null; 
         }
-
-        if (n === bodyMesh) {
-          n.material.color.set("#ffffff"); 
-          n.material.map = canvasTexture;
-          // Ensure texture repeats horizontally to cover full width
-          if (n.material.map) {
-            n.material.map.wrapS = THREE.RepeatWrapping;
-            n.material.map.needsUpdate = true;
-          }
-        } else {
-          n.material.color.set(color);
-          n.material.map = null;
-        }
-
-        n.material.roughness = 0.3;
-        n.material.metalness = 0.1;
+        n.material = newMat;
         n.material.needsUpdate = true;
       }
     });
-  }, [clonedScene, color, bodyMesh, canvasTexture]);
+  }, [clonedScene, bodyMesh, canvasTexture, color]);
 
-  if (!canvasTexture) return null;
+  const handlePointerDown = (e: any) => {
+    if (!e.uv) return;
+    const { x, y } = e.uv;
+
+    // Check distance to text
+    const distText = Math.sqrt(Math.pow(x - (decalConfig.textPosX || 0.5), 2) + Math.pow(y - (decalConfig.textPosY || 0.5), 2));
+    const textThreshold = (decalConfig.textSize || 0.2) * 0.5;
+
+    // Check distance to logo
+    const distImg = Math.sqrt(Math.pow(x - (decalConfig.imgPosX || 0.5), 2) + Math.pow(y - (decalConfig.imgPosY || 0.5), 2));
+    const imgThreshold = (decalConfig.imageSize || 0.2) * 0.5;
+
+    if (distText < textThreshold) {
+      e.stopPropagation();
+      setSelectedItem("text");
+      setIsDragging(true);
+      if (controls) controls.enabled = false;
+    } else if (distImg < imgThreshold) {
+      e.stopPropagation();
+      setSelectedItem("image");
+      setIsDragging(true);
+      if (controls) controls.enabled = false;
+    } else {
+      // Rotation handled by bubbling
+    }
+  };
+
+  const handlePointerMove = (e: any) => {
+    if (!isDragging || !selectedItem || !e.uv) return;
+    e.stopPropagation();
+    const { x, y } = e.uv;
+    // Map UVs back to normalized state coordinates
+    if (selectedItem === "text") handleUpdateDecal({ textPosX: x, textPosY: y });
+    else handleUpdateDecal({ imgPosX: x, imgPosY: y });
+  };
+
+  useEffect(() => {
+    const up = () => { setIsDragging(false); if (controls) controls.enabled = true; };
+    window.addEventListener("pointerup", up);
+    return () => window.removeEventListener("pointerup", up);
+  }, [controls]);
 
   return (
-    <group scale={0.15} position={[0, -2.5, 0]}> 
-      <primitive object={clonedScene} />
+    <group scale={0.15} position={[0, -2.5, 0]}>
+      <primitive object={clonedScene} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} />
     </group>
   );
 }

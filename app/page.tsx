@@ -16,12 +16,7 @@ const models = [
     category: "Drinkware",
     modelUrl: "/hydro_flask_tumbler.glb",
   },
-  {
-    id: "paper-bag",
-    title: "Eco-Friendly Bag",
-    category: "Packaging",
-    modelUrl: "/paper_bag.glb",
-  },
+
   {
     id: "t-shirt",
     title: "Essential T-Shirt",
