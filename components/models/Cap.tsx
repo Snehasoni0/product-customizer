@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useGLTF, Decal } from "@react-three/drei";
 import * as THREE from "three";
-import { useThree } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 export default function Cap({
@@ -22,8 +22,10 @@ export default function Cap({
   const { scene } = useGLTF("/baseball_cap.glb") as any;
   const clonedScene = useMemo(() => scene.clone(), [scene]);
   const { controls } = useThree() as any;
-  const [isDragging, setIsDragging] = useState(false);
   const meshRef = useRef<THREE.Mesh>(null);
+  const groupRef = useRef<THREE.Group>(null);
+  const targetRotationY = useRef(0);
+  const currentRotationY = useRef(0);
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
 
   const p = (val: any, def = 0) => (val !== undefined ? val / 100 : def);
@@ -66,7 +68,6 @@ export default function Cap({
   };
 
   useEffect(() => {
-    if (isDragging) return;
     const updateSurface = (type: "text" | "image") => {
       const x = (type === "text" ? decalConfig.textPosX : decalConfig.imgPosX) || 0;
       const y = ((type === "text" ? decalConfig.textPosY : decalConfig.imgPosY) - 0.5) * 3 || 0;
@@ -132,15 +133,33 @@ export default function Cap({
   };
 
   useEffect(() => {
-    const up = () => { setIsDragging(false); if (controls) controls.enabled = true; };
+    const up = () => { if (controls) controls.enabled = true; };
     window.addEventListener("pointerup", up);
     return () => window.removeEventListener("pointerup", up);
   }, [controls]);
 
+  // 4. Smooth Rotation Logic
+  useEffect(() => {
+    if (Array.isArray(decalConfig.modelRotation)) {
+      targetRotationY.current = decalConfig.modelRotation[1] || 0;
+    }
+  }, [decalConfig.modelRotation]);
+
+  useFrame(() => {
+    if (groupRef.current) {
+      currentRotationY.current = THREE.MathUtils.lerp(
+        currentRotationY.current,
+        targetRotationY.current,
+        0.1, // Smoothness
+      );
+      groupRef.current.rotation.y = currentRotationY.current;
+    }
+  });
+
   if (!unifiedMesh) return null;
 
   return (
-    <group scale={15} position={[0, -15, 0]}>
+    <group ref={groupRef} scale={15} position={[0, -15, 0]}>
       <mesh
         ref={meshRef}
         geometry={unifiedMesh.geometry}
@@ -150,17 +169,7 @@ export default function Cap({
           if (hit) {
             e.stopPropagation();
             setSelectedItem(hit.object.userData.type);
-            setIsDragging(true);
-            if (controls) controls.enabled = false;
           } else if (selectedItem) setSelectedItem(null);
-        }}
-        onPointerMove={(e) => {
-          if (!isDragging || !selectedItem || !meshRef.current || !e.face) return;
-          e.stopPropagation();
-          const pLocal = meshRef.current.worldToLocal(e.point.clone());
-          const n = e.face.normal.clone();
-          if (selectedItem === "text") handleUpdateDecal({ textPosX: pLocal.x, textPosY: (pLocal.y/3)+0.5, textPosZ: pLocal.z, textNormal: [n.x, n.y, n.z] });
-          else handleUpdateDecal({ imgPosX: pLocal.x, imgPosY: (pLocal.y/3)+0.5, imgPosZ: pLocal.z, imgNormal: [n.x, n.y, n.z] });
         }}
       >
         {textTexture && (

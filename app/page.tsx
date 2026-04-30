@@ -5,10 +5,10 @@ import ProductCard from "@/components/ProductCard";
 
 const models = [
   {
-    id: "cap",
-    title: "Elite Baseball Cap",
-    category: "Headwear",
-    modelUrl: "/baseball_cap.glb",
+    id: "shopping-bag",
+    title: "Canvas Tote Bag",
+    category: "Bags",
+    modelUrl: "/shopping.glb",
   },
   {
     id: "tumbler",
@@ -24,10 +24,10 @@ const models = [
     modelUrl: "/plain_dark_blue_t-shirt.glb",
   },
   {
-    id: "shopping-bag",
-    title: "Canvas Tote Bag",
-    category: "Bags",
-    modelUrl: "/shopping.glb",
+    id: "cap",
+    title: "Elite Baseball Cap",
+    category: "Headwear",
+    modelUrl: "/baseball_cap.glb",
   },
 ];
 

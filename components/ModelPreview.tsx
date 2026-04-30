@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { useGLTF, OrbitControls, Stage, Center } from "@react-three/drei";
+import { useGLTF, OrbitControls, Stage, Center, Html } from "@react-three/drei";
 import { Suspense } from "react";
 
 function Model({ url }: { url: string }) {
@@ -26,11 +26,11 @@ function Model({ url }: { url: string }) {
   return <primitive object={clonedScene} />;
 }
 
-export default function ModelPreview({ modelUrl }: { modelUrl: string }) {
+export default function ModelPreview({ modelUrl, title }: { modelUrl: string, title: string }) {
   return (
-    <div style={{ height: "100%", width: "100%", cursor: "grab" }}>
+    <div style={{ height: "100%", width: "100%", cursor: "grab", position: "relative" }}>
       <Canvas shadows camera={{ position: [0, 0, 150], fov: 40 }}>
-        <Suspense fallback={null}>
+        <Suspense fallback={<Html center style={{ color: 'white', whiteSpace: 'nowrap', fontWeight: '500' }}>Loading {title}...</Html>}>
           <Stage 
             adjustCamera={1.2} 
             intensity={0.5} 

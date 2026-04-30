@@ -44,7 +44,7 @@ export default function ProductCard({
           backgroundColor: "#9ca3af",
         }}
       >
-        {mounted && <ModelPreview modelUrl={modelUrl} />}
+        {mounted && <ModelPreview modelUrl={modelUrl} title={title} />}
       </div>
 
       <div
