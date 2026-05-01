@@ -124,46 +124,15 @@ export default function TShirt({
     if (!ctx) return;
 
     const renderCanvas = async () => {
+      const font = decalConfig.fontFamily || "Outfit";
+      const weight = font.toLowerCase().includes("playwrite") ? "normal" : "bold";
+      
+      // Ensure font is loaded before rendering
+      await document.fonts.load(`${weight} 400px ${font}`);
+
       ctx.fillStyle = color || "#ffffff";
       ctx.fillRect(0, 0, 2048, 2048);
 
-      // ==========================================
-      // 🛡️ PRINT AREA DEFINITIONS (Safe Zones)
-      // ==========================================
-
-      // Helper to draw the safe zone guides (Now supports Rotation)
-      const drawZone = (zone: any, label: string) => {
-        ctx.save();
-        const centerX = (zone.minX + zone.maxX) / 2;
-        const centerY = (zone.minY + zone.maxY) / 2;
-        const w = zone.maxX - zone.minX;
-        const h = zone.maxY - zone.minY;
-
-        ctx.translate(centerX, centerY);
-        ctx.rotate(zone.rot || 0);
-        
-        // Black for visibility
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";
-        ctx.setLineDash([20, 20]);
-        ctx.lineWidth = 8;
-        ctx.strokeRect(-w/2, -h/2, w, h);
-        
-        // Add a faint black background to the box
-        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-        ctx.fillRect(-w/2, -h/2, w, h);
-        
-        ctx.fillStyle = "rgba(0, 0, 0, 1)";
-        ctx.font = "bold 40px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(label, 0, 0);
-        ctx.restore();
-      };
-
-      // Draw the guides so the user can see the area (Now hidden)
-      // drawZone(BACK_ZONE, "BACK PRINT AREA");
-      // drawZone(FRONT_ZONE, "FRONT PRINT AREA");
-
-      // Image (LOGO) - Restricting to BACK ZONE
       if (decalConfig.image) {
         try {
           const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -179,12 +148,10 @@ export default function TShirt({
           const iSize = Number(decalConfig.imageSize) || 1;
           const iRot = Number(decalConfig.imgRot) || 0;
 
-          // 1. Calculate RAW position
           let rawX = 1024 + iPosX * 512;
           let rawY = 1024 - iPosY * 512;
           const w = 400 * iSize * 2;
 
-          // 🛡️ REVERTED TO SIMPLE BLOCKING
           const x = Math.max(BACK_ZONE.minX + w/2, Math.min(BACK_ZONE.maxX - w/2, rawX));
           const y = Math.max(BACK_ZONE.minY + w/2, Math.min(BACK_ZONE.maxY - w/2, rawY));
 
@@ -206,19 +173,16 @@ export default function TShirt({
         }
       }
 
-      // Text - Restricting to FRONT ZONE
       if (decalConfig.text) {
         const tPosX = Number(decalConfig.textPosX) || 0;
         const tPosY = Number(decalConfig.textPosY) || 0;
         const tSize = Number(decalConfig.textSize) || 1;
         const tRot = Number(decalConfig.textRot) || 0;
 
-        // 1. Calculate RAW position (RESORED to original math)
         let rawX = 1024 + tPosX * 512; 
         let rawY = 1024 - tPosY * 512;
         const fontSize = 150 * tSize;
 
-        // 🛡️ REVERTED TO SIMPLE BLOCKING
         const x = Math.max(FRONT_ZONE.minX, Math.min(FRONT_ZONE.maxX, rawX));
         const y = Math.max(FRONT_ZONE.minY, Math.min(FRONT_ZONE.maxY, rawY));
 
@@ -226,25 +190,27 @@ export default function TShirt({
         ctx.translate(x, y);
         ctx.rotate(tRot);
 
+        ctx.font = `${weight} ${fontSize}px ${font}, sans-serif`;
+
         if (selectedItem === "text") {
-          ctx.font = `bold ${fontSize}px ${decalConfig.fontFamily || "Arial"}`;
           const textWidth = ctx.measureText(decalConfig.text).width;
           ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
           ctx.setLineDash([15, 15]);
           ctx.lineWidth = 8;
           ctx.strokeRect(
             -textWidth / 2,
-            -fontSize / 2,
+            -fontSize / 2 - 20, // Padding for box
             textWidth,
-            fontSize,
+            fontSize + 40,
           );
         }
 
         ctx.fillStyle = decalConfig.textColor || "#ffffff";
-        ctx.font = `bold ${fontSize}px ${decalConfig.fontFamily || "Arial"}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(decalConfig.text, 0, 0);
+        
+        // Vertical offset to prevent clipping
+        ctx.fillText(decalConfig.text, 0, 10);
         ctx.restore();
       }
 
@@ -252,7 +218,7 @@ export default function TShirt({
     };
 
     renderCanvas();
-  }, [decalConfig, color, canvasTexture, selectedItem]);
+  }, [decalConfig.text, decalConfig.textColor, decalConfig.textSize, decalConfig.textPosX, decalConfig.textPosY, decalConfig.textRot, decalConfig.fontFamily, decalConfig.image, decalConfig.imageSize, decalConfig.imgPosX, decalConfig.imgPosY, decalConfig.imgRot, color, canvasTexture, selectedItem]);
 
   // 4. Apply to Model
   useEffect(() => {

@@ -89,23 +89,47 @@ export default function Cap({
   }, [decalConfig.textPosX, decalConfig.textPosY, decalConfig.imgPosX, decalConfig.imgPosY]);
 
   const [textAspect, setTextAspect] = useState(1);
+  const [loadedFont, setLoadedFont] = useState("");
+
+  useEffect(() => {
+    const font = decalConfig.fontFamily || "Outfit";
+    const weight = font.toLowerCase().includes("playwrite") ? "normal" : "bold";
+    document.fonts.load(`${weight} 150px ${font}`).then(() => {
+      setLoadedFont(font);
+    });
+  }, [decalConfig.fontFamily]);
+
   const textTexture = useMemo(() => {
-    if (!decalConfig.text) return null;
+    const currentFont = decalConfig.fontFamily || "Outfit";
+    if (!decalConfig.text || (decalConfig.fontFamily && loadedFont !== currentFont)) return null;
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
-    ctx.font = "bold 150px Arial";
+    
+    const font = decalConfig.fontFamily || "Outfit";
+    const weight = font.toLowerCase().includes("playwrite") ? "normal" : "bold";
+    ctx.font = `${weight} 150px ${font}, sans-serif`;
+    
     const textWidth = ctx.measureText(decalConfig.text).width;
-    const width = Math.max(textWidth + 40, 150);
-    const height = 200;
-    canvas.width = width; canvas.height = height;
+    const width = Math.max(textWidth + 150, 300);
+    const height = 500; // Drastically increased height
+    canvas.width = width; 
+    canvas.height = height;
     setTextAspect(width / height);
-    ctx.font = "bold 150px Arial";
+    
+    // Reset font after resizing canvas
+    ctx.font = `${weight} 150px ${font}, sans-serif`;
     ctx.fillStyle = decalConfig.textColor || "#ffffff";
-    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.textAlign = "center"; 
+    ctx.textBaseline = "middle";
+    
+    // Position text in the center with plenty of room above and below
     ctx.fillText(decalConfig.text, width / 2, height / 2);
-    return new THREE.CanvasTexture(canvas);
-  }, [decalConfig.text, decalConfig.textColor, decalConfig.fontFamily]);
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+  }, [decalConfig.text, decalConfig.textColor, decalConfig.fontFamily, loadedFont]);
 
   const [imgAspect, setImgAspect] = useState(1);
   const imageTexture = useMemo(() => {

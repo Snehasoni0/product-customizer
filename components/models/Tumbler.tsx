@@ -70,6 +70,12 @@ export default function Tumbler({
     if (!ctx) return;
 
     const renderCanvas = async () => {
+      const font = decalConfig.fontFamily || "Outfit";
+      const weight = font.toLowerCase().includes("playwrite") ? "normal" : "bold";
+      
+      // Ensure font is loaded before rendering
+      await document.fonts.load(`${weight} 400px ${font}`);
+
       ctx.fillStyle = color || "#ffffff";
       ctx.fillRect(0, 0, 2048, 1024);
 
@@ -120,8 +126,6 @@ export default function Tumbler({
 
       if (decalConfig.text) {
         const fontSize = p(decalConfig.textSize, 0.2) * 400;
-        ctx.font = `bold ${fontSize}px ${decalConfig.fontFamily || "Arial"}`;
-        const metrics = ctx.measureText(decalConfig.text);
         const x = p(decalConfig.textPosX, 0.5) * 2048;
         const virtualY = (1 - p(decalConfig.textPosY, 0.5)) * virtualH;
 
@@ -130,18 +134,24 @@ export default function Tumbler({
         ctx.translate(x, virtualY);
         ctx.rotate(decalConfig.textRot || 0);
         ctx.fillStyle = decalConfig.textColor || "#ffffff";
+        ctx.font = `${weight} ${fontSize}px ${font}, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(decalConfig.text, 0, 0);
+        
+        // Add vertical offset to prevent clipping
+        ctx.fillText(decalConfig.text, 0, 20); 
+        
         if (selectedItem === "text") {
           ctx.strokeStyle = "white";
           ctx.setLineDash([20, 20]);
           ctx.lineWidth = 10;
+          ctx.font = `${weight} ${fontSize}px ${font}, sans-serif`;
+          const metrics = ctx.measureText(decalConfig.text);
           ctx.strokeRect(
             -(metrics.width + 60) / 2,
             -(fontSize + 60) / 2,
             metrics.width + 60,
-            fontSize + 60,
+            fontSize + 100, // Extra height for bounding box
           );
         }
         ctx.restore();
@@ -151,7 +161,7 @@ export default function Tumbler({
     };
 
     renderCanvas();
-  }, [decalConfig, color, canvasTexture, selectedItem]);
+  }, [decalConfig.text, decalConfig.textColor, decalConfig.textSize, decalConfig.textPosX, decalConfig.textPosY, decalConfig.textRot, decalConfig.fontFamily, decalConfig.image, decalConfig.imageSize, decalConfig.imgPosX, decalConfig.imgPosY, decalConfig.imgRot, color, canvasTexture, selectedItem]);
 
   useEffect(() => {
     if (!bodyMesh || !canvasTexture) return;

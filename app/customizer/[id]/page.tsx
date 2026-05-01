@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useRef } from "react";
+import * as THREE from "three";
+import { GLTFExporter } from "three-stdlib";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment, Html, Stage } from "@react-three/drei";
 import { useParams } from "next/navigation";
-import { Upload, Type, Palette, ArrowLeft, RotateCw, Move } from "lucide-react";
+import { Upload, Type, Palette, ArrowLeft, RotateCw, Move, Download, Box } from "lucide-react";
 import Link from "next/link";
 
 // Model Components
@@ -87,6 +89,7 @@ const Slider = ({
 
 export default function CustomizerPage() {
   const { id } = useParams();
+  const sceneRef = useRef<THREE.Group>(null);
   const [color, setColor] = useState("#FFFFFF");
   const [text, setText] = useState("");
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
@@ -101,7 +104,8 @@ export default function CustomizerPage() {
   const [textPosY, setTextPosY] = useState(0.5);
   const [textRot, setTextRot] = useState(0);
   const [textColor, setTextColor] = useState("#000000");
-  const [fontFamily, setFontFamily] = useState("sans-serif");
+  const [fontFamily, setFontFamily] = useState("Outfit");
+  const weight = fontFamily === "Playwrite BR" ? "normal" : "bold";
   const [textNormal, setTextNormal] = useState<number[]>([0, 0, 1]);
 
   const [image, setImage] = useState<string | null>(null);
@@ -211,6 +215,43 @@ export default function CustomizerPage() {
     reader.readAsDataURL(file);
   };
 
+  const handleDownload = () => {
+    const canvas = document.querySelector("canvas");
+    if (!canvas) return;
+
+    // Create a temporary link to download the image
+    const dataUrl = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = `custom-design-${id}-${Date.now()}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportModel = () => {
+    if (!sceneRef.current) return;
+
+    const exporter = new GLTFExporter();
+    exporter.parse(
+      sceneRef.current,
+      (result) => {
+        const output = result instanceof ArrayBuffer ? result : JSON.stringify(result);
+        const blob = new Blob([output], { type: "application/octet-stream" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `custom-model-${id}-${Date.now()}.glb`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      },
+      (error) => {
+        console.error("An error happened during GLTF export:", error);
+      },
+      { binary: true }
+    );
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-screen bg-[#050505] overflow-hidden font-sans selection:bg-white selection:text-black">
       <div
@@ -225,18 +266,27 @@ export default function CustomizerPage() {
           <ArrowLeft size={12} /> Back to Products
         </Link>
 
+        {/* Font Pre-loader (Hidden) */}
+        <div className="sr-only opacity-0 pointer-events-none absolute -z-50">
+          <span style={{ fontFamily: "Outfit" }}>Preload</span>
+          <span style={{ fontFamily: "Playwrite BR" }}>Preload</span>
+          <span style={{ fontFamily: "Roboto" }}>Preload</span>
+          <span style={{ fontFamily: "Inter" }}>Preload</span>
+          <span style={{ fontFamily: "Playfair Display" }}>Preload</span>
+          <span style={{ fontFamily: "Montserrat" }}>Preload</span>
+          <span style={{ fontFamily: "Bebas Neue" }}>Preload</span>
+          <span style={{ fontFamily: "Space Mono" }}>Preload</span>
+        </div>
+
 
         <ControlGroup title="Base Color" icon={Palette}>
           <div className="flex items-center gap-4">
-            <div className="relative group">
-              <input
-                type="color"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className="w-12 h-12 rounded-xl cursor-pointer border-none p-0 bg-transparent"
-              />
-              <div className="absolute inset-0 rounded-xl pointer-events-none border-2 border-white/10 group-hover:border-white/40 transition-all" />
-            </div>
+            <input
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              className="w-12 h-12 rounded-xl cursor-pointer border border-white/10 p-0 bg-transparent"
+            />
             <span className="text-sm font-mono text-gray-400 uppercase tracking-widest">
               {color}
             </span>
@@ -278,24 +328,30 @@ export default function CustomizerPage() {
                 className="w-full p-4 bg-white/5 rounded-2xl border border-white/10 text-white placeholder:text-gray-600 outline-none focus:border-white/30 transition-all text-sm font-medium"
               />
               <div className="flex gap-4">
-                <div className="relative group">
-                   <input
-                    type="color"
-                    value={textColor}
-                    onChange={(e) => setTextColor(e.target.value)}
-                    className="w-12 h-12 rounded-xl border-none p-0 bg-transparent"
-                  />
-                  <div className="absolute inset-0 rounded-xl pointer-events-none border-2 border-white/10 group-hover:border-white/40 transition-all" />
+                <input
+                  type="color"
+                  value={textColor}
+                  onChange={(e) => setTextColor(e.target.value)}
+                  className="w-12 h-12 rounded-xl border border-white/10 p-0 bg-transparent cursor-pointer"
+                />
+                <div className="flex-1 relative">
+                  <select
+                    value={fontFamily}
+                    onChange={(e) => setFontFamily(e.target.value)}
+                    className="w-full p-3 bg-white/5 rounded-2xl border border-white/10 text-white text-[11px] font-bold uppercase tracking-widest appearance-none cursor-pointer outline-none focus:border-white/30 transition-all pr-8"
+                  >
+                    <option value="Outfit">Outfit</option>
+                    <option value="Playwrite BR">Playwrite BR</option>
+                    <option value="Roboto">Roboto</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="sans-serif">Sans Serif</option>
+                    <option value="cursive">Cursive</option>
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                    <RotateCw size={12} className="rotate-90" />
+                  </div>
                 </div>
-                <select
-                  value={fontFamily}
-                  onChange={(e) => setFontFamily(e.target.value)}
-                  className="flex-1 p-3 bg-white/5 rounded-2xl border border-white/10 text-white text-[11px] font-bold uppercase tracking-widest appearance-none cursor-pointer outline-none focus:border-white/30 transition-all"
-                >
-                  <option value="sans-serif">Sans Serif</option>
-                  <option value="serif">Serif</option>
-                  <option value="monospace">Monospace</option>
-                </select>
               </div>
               <Slider
                 label="Scale"
@@ -410,11 +466,31 @@ export default function CustomizerPage() {
             </div>
           </ControlGroup>
         )}
+        
+        {/* Download Actions */}
+        <div className="space-y-3 mt-8">
+          <button
+            onClick={handleDownload}
+            className="w-full py-4 bg-white/5 backdrop-blur-md border border-white/10 text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-white/10 active:scale-95 transition-all group"
+          >
+            <Download size={18} className="text-gray-400 group-hover:text-white transition-colors" />
+            Save Screenshot
+          </button>
+          
+          <button
+            onClick={handleExportModel}
+            className="w-full py-4 bg-white text-black rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gray-100 active:scale-95 transition-all shadow-xl shadow-black/20 group"
+          >
+            <Box size={18} className="group-hover:rotate-12 transition-transform" />
+            Download 3D Model (.glb)
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 relative bg-[#f3f4f6]">
         <Canvas
           shadows
+          gl={{ preserveDrawingBuffer: true }}
           camera={{ position: [0, 0, 150], fov: 40 }}
           onPointerMissed={() => setSelectedItem(null)}
         >
@@ -430,7 +506,7 @@ export default function CustomizerPage() {
               preset="rembrandt"
               shadows="contact"
             >
-              <group>
+              <group ref={sceneRef}>
                 {(() => {
                   const props = {
                     color,

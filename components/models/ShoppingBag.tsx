@@ -28,6 +28,15 @@ export default function ShoppingBag({
   const [backImgAspect, setBackImgAspect] = useState(1);
   const [stickyMode, setStickyMode] = useState(false);
   const [isOutOfBounds, setIsOutOfBounds] = useState(false);
+  const [loadedFont, setLoadedFont] = useState("");
+
+  useEffect(() => {
+    const font = decalConfig.fontFamily || "Outfit";
+    const weight = font.toLowerCase().includes("playwrite") ? "normal" : "bold";
+    document.fonts.load(`${weight} 200px ${font}`).then(() => {
+      setLoadedFont(font);
+    });
+  }, [decalConfig.fontFamily]);
 
   // Use a ref for dragging state to avoid stale closures in useFrame
   const draggingRef = useRef(false);
@@ -132,7 +141,8 @@ export default function ShoppingBag({
 
   // 3. Text Texture Generator (High Res)
   const textTexture = useMemo(() => {
-    if (!decalConfig.text) return null;
+    const currentFont = decalConfig.fontFamily || "Outfit";
+    if (!decalConfig.text || (decalConfig.fontFamily && loadedFont !== currentFont)) return null;
     if (typeof document === "undefined") return null;
 
     // Temporary canvas to measure text
@@ -140,19 +150,22 @@ export default function ShoppingBag({
     const tempCtx = tempCanvas.getContext("2d");
     if (!tempCtx) return null;
 
+    const font = decalConfig.fontFamily || "Outfit";
+    const weight = font.toLowerCase().includes("playwrite") ? "normal" : "bold";
+    
     let baseFontSize = 250;
-    tempCtx.font = `bold ${baseFontSize}px ${decalConfig.fontFamily || "Arial"}`;
+    tempCtx.font = `${weight} ${baseFontSize}px ${font}, sans-serif`;
     let textWidth = tempCtx.measureText(decalConfig.text).width;
 
     if (textWidth > 1500) {
       const scale = 1500 / textWidth;
       baseFontSize *= scale;
-      tempCtx.font = `bold ${baseFontSize}px ${decalConfig.fontFamily || "Arial"}`;
+      tempCtx.font = `${weight} ${baseFontSize}px ${font}, sans-serif`;
       textWidth = tempCtx.measureText(decalConfig.text).width;
     }
 
-    const h = baseFontSize * 1.2;
-    const padding = 40;
+    const h = baseFontSize * 2.0; // Increased from 1.2 to give much more vertical room
+    const padding = 100; // Increased padding
     const totalW = Math.max(textWidth + padding * 2, 100);
     const totalH = Math.max(h + padding * 2, 100);
 
@@ -174,11 +187,15 @@ export default function ShoppingBag({
       ctx.strokeRect(5, 5, totalW - 10, totalH - 10);
     }
 
-    ctx.font = `bold ${baseFontSize}px ${decalConfig.fontFamily || "Arial"}`;
+    const fontStyle = decalConfig.fontFamily || "Outfit";
+    const weightStyle = fontStyle.toLowerCase().includes("playwrite") ? "normal" : "bold";
+    ctx.font = `${weightStyle} ${baseFontSize}px ${fontStyle}, sans-serif`;
     ctx.fillStyle = decalConfig.textColor || "#ffffff";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(decalConfig.text, totalW / 2, totalH / 2);
+    
+    // Vertical offset to prevent clipping
+    ctx.fillText(decalConfig.text, totalW / 2, totalH / 2 + 15);
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.anisotropy = 16;
@@ -188,6 +205,7 @@ export default function ShoppingBag({
     decalConfig.fontFamily,
     decalConfig.textColor,
     selectedItem,
+    loadedFont,
   ]);
 
   // Synchronous text aspect calculation
@@ -197,20 +215,22 @@ export default function ShoppingBag({
     const ctx = canvas.getContext("2d");
     if (!ctx) return 1;
     let baseFontSize = 250;
-    ctx.font = `bold ${baseFontSize}px ${decalConfig.fontFamily || "Arial"}`;
+    const font = decalConfig.fontFamily || "Outfit";
+    const weight = font.toLowerCase().includes("playwrite") ? "normal" : "bold";
+    ctx.font = `${weight} ${baseFontSize}px ${font}, sans-serif`;
     let textWidth = ctx.measureText(decalConfig.text).width;
     if (textWidth > 1500) {
       const scale = 1500 / textWidth;
       baseFontSize *= scale;
-      ctx.font = `bold ${baseFontSize}px ${decalConfig.fontFamily || "Arial"}`;
+      ctx.font = `${weight} ${baseFontSize}px ${font}, sans-serif`;
       textWidth = ctx.measureText(decalConfig.text).width;
     }
-    const h = baseFontSize * 1.2;
-    const padding = 40;
+    const h = baseFontSize * 2.0;
+    const padding = 100;
     return (
       Math.max(textWidth + padding * 2, 100) / Math.max(h + padding * 2, 100)
     );
-  }, [decalConfig.text, decalConfig.fontFamily]);
+  }, [decalConfig.text, decalConfig.textColor, decalConfig.fontFamily, loadedFont]);
 
   const loadedImageRef = useRef<HTMLImageElement | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
