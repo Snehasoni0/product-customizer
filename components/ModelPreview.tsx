@@ -3,6 +3,8 @@
 import { Canvas } from "@react-three/fiber";
 import { useGLTF, OrbitControls, Stage, Center, Html } from "@react-three/drei";
 import { Suspense } from "react";
+import ModelSkeleton from "./ModelSkeleton";
+
 
 function Model({ url }: { url: string }) {
   const { scene } = useGLTF(url);
@@ -30,7 +32,8 @@ export default function ModelPreview({ modelUrl, title }: { modelUrl: string, ti
   return (
     <div style={{ height: "100%", width: "100%", cursor: "grab", position: "relative" }}>
       <Canvas shadows camera={{ position: [0, 0, 150], fov: 40 }}>
-        <Suspense fallback={<Html center style={{ color: 'white', whiteSpace: 'nowrap', fontWeight: '500' }}>Loading {title}...</Html>}>
+        <Suspense fallback={<ModelSkeleton modelName={title} isPreview />}>
+
           <Stage 
             adjustCamera={1.2} 
             intensity={0.5} 

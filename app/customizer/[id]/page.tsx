@@ -13,6 +13,8 @@ import Tumbler from "@/components/models/Tumbler";
 
 import TShirt from "@/components/models/TShirt";
 import ShoppingBag from "@/components/models/ShoppingBag";
+import ModelSkeleton from "@/components/ModelSkeleton";
+
 
 // ------------------ UI HELPERS ------------------
 
@@ -32,12 +34,17 @@ const getModelName = (id: any) => {
 };
 
 const ControlGroup = ({ title, icon: Icon, children }: any) => (
-  <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
-    <div className="flex items-center gap-2 mb-4 text-gray-700 font-semibold">
-      <Icon size={18} />
+  <div className="mb-6 p-5 bg-white/5 backdrop-blur-xl rounded-[28px] border border-white/10 shadow-2xl relative overflow-hidden group">
+    {/* Subtle gradient glow */}
+    <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/5 rounded-full blur-3xl pointer-events-none group-hover:bg-white/10 transition-all duration-700" />
+    
+    <div className="flex items-center gap-2 mb-5 text-gray-200 font-bold text-xs uppercase tracking-[0.15em] relative z-10">
+      <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center border border-white/5">
+        <Icon size={14} className="text-gray-400" />
+      </div>
       <span>{title}</span>
     </div>
-    <div className="space-y-4">{children}</div>
+    <div className="space-y-5 relative z-10">{children}</div>
   </div>
 );
 
@@ -52,10 +59,10 @@ const Slider = ({
   suffix = "%",
 }: any) => {
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex justify-between text-xs text-gray-500 uppercase font-medium">
+    <div className="flex flex-col gap-2.5">
+      <div className="flex justify-between text-[10px] text-gray-500 uppercase font-bold tracking-widest">
         <label>{label}</label>
-        <span className="font-mono">
+        <span className="font-mono text-white/60">
           {Math.round(value * displayMultiplier)}
           {suffix}
         </span>
@@ -70,7 +77,7 @@ const Slider = ({
           e.stopPropagation();
           onChange(parseFloat(e.target.value));
         }}
-        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black"
+        className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-white hover:accent-gray-200 transition-all"
       />
     </div>
   );
@@ -205,85 +212,85 @@ export default function CustomizerPage() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-gray-200 overflow-hidden font-sans">
+    <div className="flex flex-col md:flex-row h-screen bg-[#050505] overflow-hidden font-sans selection:bg-white selection:text-black">
       <div
-        className="w-full md:w-[400px] h-full bg-white shadow-2xl z-10 overflow-y-auto p-6 scrollbar-hide"
+        className="w-full md:w-[400px] h-full bg-[#0a0a0a] border-r border-white/5 shadow-2xl z-10 overflow-y-auto p-8 scrollbar-hide"
         onMouseEnter={() => setControlsEnabled(false)}
         onMouseLeave={() => setControlsEnabled(true)}
       >
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-gray-500 hover:text-black transition-colors mb-6 font-medium text-sm"
+          className="inline-flex items-center gap-2 text-gray-500 hover:text-white transition-all mb-12 font-bold text-[10px] uppercase tracking-[0.3em]"
         >
-          <ArrowLeft size={16} /> Back to Products
+          <ArrowLeft size={12} /> Back to Products
         </Link>
 
-        <header className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Customizer</h1>
-          <p className="text-gray-500 text-sm">
-            Design your custom {id || "product"}
-          </p>
-        </header>
 
         <ControlGroup title="Base Color" icon={Palette}>
           <div className="flex items-center gap-4">
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              className="w-12 h-12 rounded-lg cursor-pointer border-none p-0"
-            />
-            <span className="text-sm font-mono text-gray-600 uppercase">
+            <div className="relative group">
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="w-12 h-12 rounded-xl cursor-pointer border-none p-0 bg-transparent"
+              />
+              <div className="absolute inset-0 rounded-xl pointer-events-none border-2 border-white/10 group-hover:border-white/40 transition-all" />
+            </div>
+            <span className="text-sm font-mono text-gray-400 uppercase tracking-widest">
               {color}
             </span>
           </div>
         </ControlGroup>
 
         <ControlGroup title="Design Elements" icon={Type}>
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-6 bg-white/5 p-1 rounded-2xl border border-white/5">
             <button
               onClick={() => setSelectedItem("text")}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${selectedItem === "text" ? "bg-black text-white" : "bg-gray-100 text-gray-500"}`}
+              className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedItem === "text" ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-gray-300"}`}
             >
               Text
             </button>
             <button
               onClick={() => setSelectedItem("image")}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${selectedItem === "image" ? "bg-black text-white" : "bg-gray-100 text-gray-500"}`}
+              className={`flex-1 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${selectedItem === "image" ? "bg-white text-black shadow-xl" : "text-gray-500 hover:text-gray-300"}`}
             >
               Logo
             </button>
           </div>
 
           {!selectedItem ? (
-            <div className="flex flex-col items-center justify-center py-10 px-4 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200 animate-in fade-in zoom-in duration-300">
-              <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-3">
-                <Move className="text-gray-400" size={20} />
+            <div className="flex flex-col items-center justify-center py-14 px-4 text-center bg-white/[0.02] rounded-3xl border border-dashed border-white/10 animate-in fade-in zoom-in duration-700">
+              <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-5 border border-white/5">
+                <Move className="text-gray-600" size={28} />
               </div>
-              <p className="text-gray-500 text-sm font-medium leading-relaxed">
-                Customize your model by<br />adding text and logo
+              <p className="text-gray-500 text-xs font-bold tracking-tight leading-relaxed uppercase opacity-80">
+                Select element to<br /><span className="text-white">customize</span>
               </p>
             </div>
           ) : selectedItem === "text" ? (
-            <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+            <div className="space-y-7 animate-in fade-in slide-in-from-top-6 duration-500">
               <input
                 type="text"
-                placeholder="Type text..."
+                placeholder="Type here..."
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                className="w-full p-3 rounded-lg border border-gray-200 outline-none"
+                className="w-full p-4 bg-white/5 rounded-2xl border border-white/10 text-white placeholder:text-gray-600 outline-none focus:border-white/30 transition-all text-sm font-medium"
               />
               <div className="flex gap-4">
-                <input
-                  type="color"
-                  value={textColor}
-                  onChange={(e) => setTextColor(e.target.value)}
-                  className="w-10 h-10 rounded border-none p-0"
-                />
+                <div className="relative group">
+                   <input
+                    type="color"
+                    value={textColor}
+                    onChange={(e) => setTextColor(e.target.value)}
+                    className="w-12 h-12 rounded-xl border-none p-0 bg-transparent"
+                  />
+                  <div className="absolute inset-0 rounded-xl pointer-events-none border-2 border-white/10 group-hover:border-white/40 transition-all" />
+                </div>
                 <select
                   value={fontFamily}
                   onChange={(e) => setFontFamily(e.target.value)}
-                  className="flex-1 p-2 rounded-lg border border-gray-200 text-sm"
+                  className="flex-1 p-3 bg-white/5 rounded-2xl border border-white/10 text-white text-[11px] font-bold uppercase tracking-widest appearance-none cursor-pointer outline-none focus:border-white/30 transition-all"
                 >
                   <option value="sans-serif">Sans Serif</option>
                   <option value="serif">Serif</option>
@@ -291,38 +298,14 @@ export default function CustomizerPage() {
                 </select>
               </div>
               <Slider
-                label="Text Scale"
+                label="Scale"
                 value={textSize}
                 min={0.01}
                 max={2.0}
                 onChange={setTextSize}
               />
               <Slider
-                label={
-                  id === "hydro-flask" || id === "tumbler"
-                    ? "Horizontal Position (360°)"
-                    : "Text Pos X"
-                }
-                value={textPosX}
-                min={id === "hydro-flask" || id === "tumbler" ? 0 : -0.5}
-                max={id === "hydro-flask" || id === "tumbler" ? 1 : 0.5}
-                displayMultiplier={
-                  id === "hydro-flask" || id === "tumbler" ? 360 : 1
-                }
-                suffix={id === "hydro-flask" || id === "tumbler" ? "°" : ""}
-                onChange={setTextPosX}
-              />
-              <Slider
-                label="Text Pos Y"
-                value={textPosY}
-                min={id === "hydro-flask" || id === "tumbler" ? 0 : -0.7}
-                max={id === "hydro-flask" || id === "tumbler" ? 1 : 0.4}
-                displayMultiplier={1}
-                onChange={setTextPosY}
-              />
-
-              <Slider
-                label="Text Rotation"
+                label="Rotation"
                 value={textRot}
                 min={0}
                 max={Math.PI * 2}
@@ -332,10 +315,10 @@ export default function CustomizerPage() {
               />
             </div>
           ) : (
-            <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
-                <Upload className="text-gray-400 mb-1" size={20} />
-                <span className="text-[10px] text-gray-500 uppercase font-bold">
+            <div className="space-y-7 animate-in fade-in slide-in-from-top-6 duration-500">
+              <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-white/10 rounded-3xl cursor-pointer hover:bg-white/[0.03] hover:border-white/30 transition-all group">
+                <Upload className="text-gray-600 mb-2 group-hover:text-white transition-colors" size={32} />
+                <span className="text-[9px] text-gray-500 group-hover:text-gray-300 uppercase font-bold tracking-[0.25em]">
                   Upload Logo
                 </span>
                 <input
@@ -348,31 +331,15 @@ export default function CustomizerPage() {
               {image && (
                 <>
                   <Slider
-                    label="Logo Scale"
+                    label="Scale"
                     value={imageSize}
                     min={0.01}
                     max={2.0}
                     onChange={setImageSize}
                   />
-                  <Slider
-                    label="Logo Pos X"
-                    value={imgPosX}
-                    min={-5}
-                    max={5}
-                    displayMultiplier={1}
-                    onChange={setImgPosX}
-                  />
-                  <Slider
-                    label="Logo Pos Y"
-                    value={imgPosY}
-                    min={-5}
-                    max={5}
-                    displayMultiplier={1}
-                    onChange={setImgPosY}
-                  />
 
                   <Slider
-                    label="Logo Rotation"
+                    label="Rotation"
                     value={imgRot}
                     min={0}
                     max={Math.PI * 2}
@@ -387,12 +354,12 @@ export default function CustomizerPage() {
         </ControlGroup>
 
         {id !== "cap" && id !== "tumbler" && id !== "t-shirt" && id !== "shopping-bag" && (
-          <ControlGroup title="Back Side Design" icon={Move}>
-            <div className="space-y-4">
-              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
-                <Upload className="text-gray-400 mb-1" size={20} />
-                <span className="text-[10px] text-gray-500 uppercase font-bold">
-                  Upload Back Cover
+          <ControlGroup title="Back Side" icon={Move}>
+            <div className="space-y-7">
+              <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-white/10 rounded-3xl cursor-pointer hover:bg-white/[0.03] hover:border-white/30 transition-all group">
+                <Upload className="text-gray-600 mb-2 group-hover:text-white transition-colors" size={32} />
+                <span className="text-[9px] text-gray-500 group-hover:text-gray-300 uppercase font-bold tracking-[0.25em]">
+                  Upload Cover
                 </span>
                 <input
                   type="file"
@@ -426,12 +393,12 @@ export default function CustomizerPage() {
         
         {/* Shopping Bag has its own version of Back Side Design without sliders */}
         {id === "shopping-bag" && (
-          <ControlGroup title="Back Side Design" icon={Move}>
-            <div className="space-y-4">
-              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50">
-                <Upload className="text-gray-400 mb-1" size={20} />
-                <span className="text-[10px] text-gray-500 uppercase font-bold">
-                  Upload Back Cover
+          <ControlGroup title="Back Side" icon={Move}>
+            <div className="space-y-7">
+              <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-white/10 rounded-3xl cursor-pointer hover:bg-white/[0.03] hover:border-white/30 transition-all group">
+                <Upload className="text-gray-600 mb-2 group-hover:text-white transition-colors" size={32} />
+                <span className="text-[9px] text-gray-500 group-hover:text-gray-300 uppercase font-bold tracking-[0.25em]">
+                  Upload Cover
                 </span>
                 <input
                   type="file"
@@ -443,11 +410,9 @@ export default function CustomizerPage() {
             </div>
           </ControlGroup>
         )}
-
-        {/* Model View removed as requested for a cleaner automated experience */}
       </div>
 
-      <div className="flex-1 relative bg-neutral-100">
+      <div className="flex-1 relative bg-[#f3f4f6]">
         <Canvas
           shadows
           camera={{ position: [0, 0, 150], fov: 40 }}
@@ -456,11 +421,7 @@ export default function CustomizerPage() {
           <ambientLight intensity={0.5} />
           <Environment preset="city" />
           <Suspense
-            fallback={
-              <Html center className="text-gray-400 font-medium">
-                Loading {getModelName(id)}...
-              </Html>
-            }
+            fallback={<ModelSkeleton modelName={getModelName(id)} />}
           >
             <Stage
               adjustCamera={1.2}
