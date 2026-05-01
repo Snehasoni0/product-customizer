@@ -72,7 +72,6 @@ export default function Cap({
       const x = (type === "text" ? decalConfig.textPosX : decalConfig.imgPosX) || 0;
       const y = ((type === "text" ? decalConfig.textPosY : decalConfig.imgPosY) - 0.5) * 3 || 0;
       
-      // Better back/front detection based on normal if available
       const currentNormal = type === "text" ? decalConfig.textNormal : decalConfig.imgNormal;
       const isBack = currentNormal ? currentNormal[2] < 0 : (type === "image");
 
@@ -112,18 +111,17 @@ export default function Cap({
     
     const textWidth = ctx.measureText(decalConfig.text).width;
     const width = Math.max(textWidth + 150, 300);
-    const height = 500; // Drastically increased height
+    const height = 500; 
     canvas.width = width; 
     canvas.height = height;
     setTextAspect(width / height);
     
-    // Reset font after resizing canvas
     ctx.font = `${weight} 150px ${font}, sans-serif`;
     ctx.fillStyle = decalConfig.textColor || "#ffffff";
     ctx.textAlign = "center"; 
     ctx.textBaseline = "middle";
     
-    // Position text in the center with plenty of room above and below
+
     ctx.fillText(decalConfig.text, width / 2, height / 2);
     
     const texture = new THREE.CanvasTexture(canvas);
@@ -151,7 +149,6 @@ export default function Cap({
   const getOffsetPos = (px: number, py: number, pz: number, normalArr: any): [number, number, number] => {
     const pos = new THREE.Vector3(px, py, pz);
     const normal = new THREE.Vector3(...(normalArr || [0, 0, 1]));
-    // Offset exactly along normal to ensure visibility
     pos.add(normal.clone().multiplyScalar(0.15));
     return [pos.x, pos.y, pos.z];
   };
@@ -162,7 +159,6 @@ export default function Cap({
     return () => window.removeEventListener("pointerup", up);
   }, [controls]);
 
-  // 4. Smooth Rotation Logic
   useEffect(() => {
     if (Array.isArray(decalConfig.modelRotation)) {
       targetRotationY.current = decalConfig.modelRotation[1] || 0;
@@ -174,7 +170,7 @@ export default function Cap({
       currentRotationY.current = THREE.MathUtils.lerp(
         currentRotationY.current,
         targetRotationY.current,
-        0.1, // Smoothness
+        0.1, 
       );
       groupRef.current.rotation.y = currentRotationY.current;
     }

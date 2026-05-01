@@ -73,13 +73,11 @@ export default function Tumbler({
       const font = decalConfig.fontFamily || "Outfit";
       const weight = font.toLowerCase().includes("playwrite") ? "normal" : "bold";
       
-      // Ensure font is loaded before rendering
       await document.fonts.load(`${weight} 400px ${font}`);
 
       ctx.fillStyle = color || "#ffffff";
       ctx.fillRect(0, 0, 2048, 1024);
 
-      // We use a virtual square space (2048x2048) for drawing to keep rotation square
       const virtualH = 2048;
       const ratioY = 1024 / virtualH; // 0.5
 
@@ -97,7 +95,6 @@ export default function Tumbler({
           const virtualY = (1 - p(decalConfig.imgPosY, 0.5)) * virtualH;
 
           ctx.save();
-          // Scale the whole drawing space to compensate for the 2:1 texture
           ctx.scale(1, ratioY);
           ctx.translate(x, virtualY);
           ctx.rotate(decalConfig.imgRot || 0);
@@ -138,7 +135,6 @@ export default function Tumbler({
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         
-        // Add vertical offset to prevent clipping
         ctx.fillText(decalConfig.text, 0, 20); 
         
         if (selectedItem === "text") {
@@ -151,7 +147,7 @@ export default function Tumbler({
             -(metrics.width + 60) / 2,
             -(fontSize + 60) / 2,
             metrics.width + 60,
-            fontSize + 100, // Extra height for bounding box
+            fontSize + 100, 
           );
         }
         ctx.restore();
@@ -188,14 +184,12 @@ export default function Tumbler({
     if (!e.uv) return;
     const { x, y } = e.uv;
 
-    // Check distance to text
     const distText = Math.sqrt(
       Math.pow(x - (decalConfig.textPosX || 0.5), 2) +
         Math.pow(y - (decalConfig.textPosY || 0.5), 2),
     );
     const textThreshold = (decalConfig.textSize || 0.2) * 0.5;
 
-    // Check distance to logo
     const distImg = Math.sqrt(
       Math.pow(x - (decalConfig.imgPosX || 0.5), 2) +
         Math.pow(y - (decalConfig.imgPosY || 0.5), 2),
@@ -245,23 +239,16 @@ export default function Tumbler({
 
     let { x, y } = e.uv;
 
-    // ==========================================
-    // 🛑 BOUNDARY LIMITS (Safe Zone: 0.0 to 1.0)
-    // ==========================================
-    // Yeh numbers batate hain ki decal kahan tak ja sakta hai.
-    // 0 ka matlab starting point, 1 ka matlab ending point.
+   
 
-    const MIN_X = 0.0; // Left limit (0 rakha hai taaki pura ghoom sake)
-    const MAX_X = 1.0; // Right limit (1 rakha hai taaki pura ghoom sake)
+    const MIN_X = 0.0; 
+    const MAX_X = 1.0; 
 
-    const MIN_Y = 0.15; // Bottom limit (ise badhakar 0.2 ya 0.3 karein agar neeche se stop karna h)
-    const MAX_Y = 0.85; // Top limit (ise kam karke 0.8 ya 0.75 karein agar upar lid tak nahi jana h)
-
-    // Math.min aur Math.max milkar value ko in boundaries ke andar lock kar dete hain
+    const MIN_Y = 0.15; 
+    const MAX_Y = 0.85; 
     x = Math.max(MIN_X, Math.min(MAX_X, x));
     y = Math.max(MIN_Y, Math.min(MAX_Y, y));
 
-    // Map UVs back to normalized state coordinates
     if (selectedItem === "text") {
       handleUpdateDecal({ textPosX: x, textPosY: y });
     } else {

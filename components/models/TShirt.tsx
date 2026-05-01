@@ -31,13 +31,10 @@ export default function TShirt({
   const groupRef = useRef<THREE.Group>(null);
   const prevImageRef = useRef<string | null>(null);
 
-  // ==========================================
-  // 🛡️ PRINT AREA DEFINITIONS (Safe Zones)
-  // ==========================================
+
   const FRONT_ZONE = { minX: 1100, maxX: 1650, minY: 1100, maxY: 1300, rot: 0.07 }; 
   const BACK_ZONE = { minX: 250, maxX: 750, minY: 950, maxY: 1400, rot: 0.35 };
 
-  // 1. Initialize Canvas Texture
   useEffect(() => {
     if (typeof document !== "undefined" && !canvasRef.current) {
       const canvas = document.createElement("canvas");
@@ -54,16 +51,13 @@ export default function TShirt({
     }
   }, []);
 
-  // Handle Automatic Rotation on Logo Upload
   useEffect(() => {
     if (decalConfig.image && !prevImageRef.current) {
-      // Logo just added for the first time
-      targetRotationY.current = Math.PI; // Spin to back
+      targetRotationY.current = Math.PI;
     }
     prevImageRef.current = decalConfig.image;
   }, [decalConfig.image]);
 
-  // Handle Manual Rotation from Buttons
   useEffect(() => {
     if (decalConfig.modelRotation) {
       targetRotationY.current = decalConfig.modelRotation[1];
@@ -81,7 +75,6 @@ export default function TShirt({
     }
   });
 
-  // 2. Identify the Body Mesh
   const bodyMesh = useMemo(() => {
     let mainBody: any = null;
     let maxScore = 0;
@@ -116,7 +109,6 @@ export default function TShirt({
     return mainBody;
   }, [clonedScene]);
 
-  // 3. Draw Logic
   useEffect(() => {
     if (!canvasTexture || !canvasRef.current) return;
     const canvas = canvasRef.current;
@@ -127,7 +119,6 @@ export default function TShirt({
       const font = decalConfig.fontFamily || "Outfit";
       const weight = font.toLowerCase().includes("playwrite") ? "normal" : "bold";
       
-      // Ensure font is loaded before rendering
       await document.fonts.load(`${weight} 400px ${font}`);
 
       ctx.fillStyle = color || "#ffffff";
@@ -199,7 +190,7 @@ export default function TShirt({
           ctx.lineWidth = 8;
           ctx.strokeRect(
             -textWidth / 2,
-            -fontSize / 2 - 20, // Padding for box
+            -fontSize / 2 - 20, 
             textWidth,
             fontSize + 40,
           );
@@ -209,7 +200,6 @@ export default function TShirt({
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         
-        // Vertical offset to prevent clipping
         ctx.fillText(decalConfig.text, 0, 10);
         ctx.restore();
       }
@@ -220,7 +210,6 @@ export default function TShirt({
     renderCanvas();
   }, [decalConfig.text, decalConfig.textColor, decalConfig.textSize, decalConfig.textPosX, decalConfig.textPosY, decalConfig.textRot, decalConfig.fontFamily, decalConfig.image, decalConfig.imageSize, decalConfig.imgPosX, decalConfig.imgPosY, decalConfig.imgRot, color, canvasTexture, selectedItem]);
 
-  // 4. Apply to Model
   useEffect(() => {
     if (!canvasTexture || !bodyMesh) return;
 
@@ -247,18 +236,15 @@ export default function TShirt({
   const handlePointerDown = (e: any) => {
     if (!e.uv) return;
 
-    // Map click UV to our internal pos system
     const clickPosX = (e.uv.x - 0.5) * 4;
     const clickPosY = (e.uv.y - 0.5) * 4;
 
-    // Check distance to text
     const distText = Math.sqrt(
       Math.pow(clickPosX - decalConfig.textPosX, 2) +
         Math.pow(clickPosY - decalConfig.textPosY, 2),
     );
     const textThreshold = (decalConfig.textSize || 1) * 0.4;
 
-    // Check distance to logo
     const distImg = Math.sqrt(
       Math.pow(clickPosX - decalConfig.imgPosX, 2) +
         Math.pow(clickPosY - decalConfig.imgPosY, 2),
@@ -307,23 +293,18 @@ export default function TShirt({
     if (!isDragging || !selectedItem || !e.uv) return;
     e.stopPropagation();
 
-    // 1. Get Mouse UV
     const u = e.uv.x;
     const v = e.uv.y;
 
-    // 2. Convert to Texture Pixels
     let px = u * 2048;
     let py = (1 - v) * 2048;
 
-    // 2. Decide which zone to use
     const zone = selectedItem === "text" ? FRONT_ZONE : BACK_ZONE;
     
-    // 🛡️ REVERTED TO SIMPLE DRAG BLOCKING
     const padding = 10;
     const clampedPx = Math.max(zone.minX + padding, Math.min(zone.maxX - padding, px));
     const clampedPy = Math.max(zone.minY + padding, Math.min(zone.maxY - padding, py));
 
-    // 4. Convert back to your pos system
     const finalPosX = (clampedPx - 1024) / 512;
     const finalPosY = (1024 - clampedPy) / 512;
 

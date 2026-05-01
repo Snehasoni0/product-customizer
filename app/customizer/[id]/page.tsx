@@ -9,7 +9,6 @@ import { useParams } from "next/navigation";
 import { Upload, Type, Palette, ArrowLeft, RotateCw, Move, Download, Box } from "lucide-react";
 import Link from "next/link";
 
-// Model Components
 import Cap from "@/components/models/Cap";
 import Tumbler from "@/components/models/Tumbler";
 
@@ -18,7 +17,6 @@ import ShoppingBag from "@/components/models/ShoppingBag";
 import ModelSkeleton from "@/components/ModelSkeleton";
 
 
-// ------------------ UI HELPERS ------------------
 
 const getModelName = (id: any) => {
   switch (id) {
@@ -37,7 +35,6 @@ const getModelName = (id: any) => {
 
 const ControlGroup = ({ title, icon: Icon, children }: any) => (
   <div className="mb-6 p-5 bg-white/5 backdrop-blur-xl rounded-[28px] border border-white/10 shadow-2xl relative overflow-hidden group">
-    {/* Subtle gradient glow */}
     <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/5 rounded-full blur-3xl pointer-events-none group-hover:bg-white/10 transition-all duration-700" />
     
     <div className="flex items-center gap-2 mb-5 text-gray-200 font-bold text-xs uppercase tracking-[0.15em] relative z-10">
@@ -85,7 +82,6 @@ const Slider = ({
   );
 };
 
-// ------------------ MAIN PAGE ------------------
 
 export default function CustomizerPage() {
   const { id } = useParams();
@@ -98,7 +94,6 @@ export default function CustomizerPage() {
   ]);
   const [controlsEnabled, setControlsEnabled] = useState(true);
 
-  // STABLE FLOAT STATES (0.0 to 1.0)
   const [textSize, setTextSize] = useState(0.2);
   const [textPosX, setTextPosX] = useState(0);
   const [textPosY, setTextPosY] = useState(0.5);
@@ -172,9 +167,9 @@ export default function CustomizerPage() {
       else setModelRotation([0, 0, 0]);
     } else if (id === "tumbler") {
       if (selectedItem === "image") setModelRotation([0, -Math.PI / 2, 0]);
-      else setModelRotation([0, -Math.PI / 2, 0]); // Tumbler is usually side-view
+      else setModelRotation([0, -Math.PI / 2, 0]); 
     } else if (id === "shopping-bag") {
-      // Don't force front rotation here so back image view stays active
+  
     }
   }, [id, selectedItem]);
 
@@ -198,7 +193,7 @@ export default function CustomizerPage() {
       const reader = new FileReader();
       reader.onload = () => {
         setBackImage(reader.result as string);
-        setModelRotation([0, Math.PI, 0]); // Auto-rotate to show back design
+        setModelRotation([0, Math.PI, 0]); 
       };
       reader.readAsDataURL(file);
     }
@@ -219,7 +214,6 @@ export default function CustomizerPage() {
     const canvas = document.querySelector("canvas");
     if (!canvas) return;
 
-    // Create a temporary link to download the image
     const dataUrl = canvas.toDataURL("image/png");
     const link = document.createElement("a");
     link.href = dataUrl;
@@ -255,18 +249,27 @@ export default function CustomizerPage() {
   return (
     <div className="flex flex-col md:flex-row h-screen bg-[#050505] overflow-hidden font-sans selection:bg-white selection:text-black">
       <div
-        className="w-full md:w-[400px] h-full bg-[#0a0a0a] border-r border-white/5 shadow-2xl z-10 overflow-y-auto p-8 scrollbar-hide"
+        className="w-full md:w-[400px] h-1/2 md:h-full bg-[#0a0a0a] border-b md:border-b-0 md:border-r border-white/5 shadow-2xl z-10 overflow-y-auto p-6 md:p-8 scrollbar-hide order-2 md:order-1"
         onMouseEnter={() => setControlsEnabled(false)}
         onMouseLeave={() => setControlsEnabled(true)}
       >
+        <div className="mb-2 w-full flex justify-center">
+          <div className="w-32 h-16 relative">
+            <img 
+              src="/shape byteS.svg" 
+              alt="Shapebytes Logo" 
+              className="w-full h-full object-contain brightness-110"
+            />
+          </div>
+        </div>
+
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-gray-500 hover:text-white transition-all mb-12 font-bold text-[10px] uppercase tracking-[0.3em]"
+          className="inline-flex items-center gap-2 text-gray-500 hover:text-white transition-all mb-8 font-bold text-[10px] uppercase tracking-[0.3em]"
         >
           <ArrowLeft size={12} /> Back to Products
         </Link>
 
-        {/* Font Pre-loader (Hidden) */}
         <div className="sr-only opacity-0 pointer-events-none absolute -z-50">
           <span style={{ fontFamily: "Outfit" }}>Preload</span>
           <span style={{ fontFamily: "Playwrite BR" }}>Preload</span>
@@ -447,7 +450,7 @@ export default function CustomizerPage() {
           </ControlGroup>
         )}
         
-        {/* Shopping Bag has its own version of Back Side Design without sliders */}
+      
         {id === "shopping-bag" && (
           <ControlGroup title="Back Side" icon={Move}>
             <div className="space-y-7">
@@ -485,9 +488,15 @@ export default function CustomizerPage() {
             Download 3D Model (.glb)
           </button>
         </div>
+
+        <div className="mt-16 pt-8 border-t border-white/5 pb-4 text-center">
+          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/20">
+            © 2026 Shapebytes All right reserved
+          </p>
+        </div>
       </div>
 
-      <div className="flex-1 relative bg-[#f3f4f6]">
+      <div className="flex-1 h-1/2 md:h-full relative bg-[#f3f4f6] order-1 md:order-2">
         <Canvas
           shadows
           gl={{ preserveDrawingBuffer: true }}

@@ -22,7 +22,8 @@ export default function ShoppingBag({
 }) {
   const { scene } = useGLTF("/shopping.glb") as any;
   const clonedScene = useMemo(() => scene.clone(), [scene]);
-  const { controls, camera, raycaster } = useThree() as any;
+  // const { controls, camera, raycaster } = useThree() as any;
+  const controls = null as any;
   const [isDragging, setIsDragging] = useState(false);
   const [imgAspect, setImgAspect] = useState(1);
   const [backImgAspect, setBackImgAspect] = useState(1);
